@@ -1,79 +1,123 @@
-
 import 'package:flutter/material.dart';
-import 'package:managment/data/listdata.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:managment/data/models/add_date.dart';
+import 'package:managment/data/utility.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
 
+class Home extends StatefulWidget {
+  const Home({Key? key}) : super(key: key);
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  var history;
+  final box = Hive.box<Add_data>('data');
+  final List<String> day = [
+    'Monday',
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    'friday',
+    'saturday',
+    'sunday'
+  ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: SizedBox(height: 340, child: head()),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Transactions History',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 19,
-                            color: Colors.black,
+          child: ValueListenableBuilder(
+              valueListenable: box.listenable(),
+              builder: (context, value, child) {
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: 340, child: _head()),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Transactions History',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 19,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              'See all',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text('See All',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: Colors.grey,
-                        ),
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                          history = box.values.toList()[index];
+                          return getList(history, index);
+                        },
+                        childCount: box.length,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverList(delegate: SliverChildBuilderDelegate((context, index){
-                return ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: Image.asset('images/${geter()[index].image!}',height: 40,),
-                  ),
-                  title: Text(
-                    geter()[index].name!,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle:Text(geter()[index].time!,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ), 
-                  trailing: Text(geter()[index].fee!,style: TextStyle(
-                fontWeight: FontWeight.w600,
-                    fontSize: 19,
-                    color: geter()[index].buy! ? Colors.red : Colors.green,
-                ),
-                  )
+                    )
+                  ],
                 );
-              },
-                childCount: geter().length,
-              ))
+              })),
+    );
+  }
 
-            ],
-          ),
+  Widget getList(Add_data history, int index) {
+    return Dismissible(
+        key: UniqueKey(),
+        onDismissed: (direction) {
+          history.delete();
+        },
+        child: get(index, history));
+  }
+
+  ListTile get(int index, Add_data history) {
+    return ListTile(
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: Image.asset('images/${history.name}.png', height: 40),
+      ),
+      title: Text(
+        history.name,
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        '${day[history.datetime.weekday - 1]}  ${history.datetime.year}-${history.datetime.day}-${history.datetime.month}',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      trailing: Text(
+        history.amount,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 19,
+          color: history.IN == 'Income' ? Colors.green : Colors.red,
+        ),
       ),
     );
   }
-  Widget head(){
-    return  Stack(
+
+  Widget _head() {
+    return Stack(
       children: [
         Column(
           children: [
@@ -81,49 +125,50 @@ class HomePage extends StatelessWidget {
               width: double.infinity,
               height: 240,
               decoration: BoxDecoration(
-                  color: Color(0xff368983),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  )
+                color: Color(0xff368983),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
               ),
               child: Stack(
                 children: [
                   Positioned(
-                      top: 35,
-                      left: 340,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(7),
-                        child: Container(
-                          height: 40,
-                          width: 40,
-                          color: Color.fromRGBO(250, 250, 250, 0.1),
-                          child: Icon(Icons.notification_add_outlined,
-                            size: 30,
-                            color: Colors.white,
-                          ),
+                    top: 35,
+                    left: 340,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: Container(
+                        height: 40,
+                        width: 40,
+                        color: Color.fromRGBO(250, 250, 250, 0.1),
+                        child: Icon(
+                          Icons.notification_add_outlined,
+                          size: 30,
+                          color: Colors.white,
                         ),
-                      )
+                      ),
+                    ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(top: 35,left: 10),
+                    padding: const EdgeInsets.only(top: 35, left: 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Good afternoon',
                           style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                              color: Color.fromARGB(255, 244, 223, 223)
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            color: Color.fromARGB(255, 224, 223, 223),
                           ),
                         ),
                         Text(
-                          'MD. Shahahdat Hossain',
+                          'MD. Shahadat Hossain',
                           style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 20,
-                              color: Colors.white
+                            fontWeight: FontWeight.w600,
+                            fontSize: 20,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -136,58 +181,62 @@ class HomePage extends StatelessWidget {
         ),
         Positioned(
           top: 140,
-          left: 40,
+          left: 37,
           child: Container(
             height: 170,
             width: 320,
             decoration: BoxDecoration(
-              boxShadow:[ BoxShadow(
-                color: Color.fromRGBO(47, 125, 121, 0.3),
-                offset: Offset(0,6),
-                blurRadius: 12,
-                spreadRadius: 6,
-              ),],
+              boxShadow: [
+                BoxShadow(
+                  color: Color.fromRGBO(47, 125, 121, 0.3),
+                  offset: Offset(0, 6),
+                  blurRadius: 12,
+                  spreadRadius: 6,
+                ),
+              ],
               color: Color.fromARGB(255, 47, 125, 121),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Column(
               children: [
-                SizedBox(height: 10,),
+                SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total Balance',
+                      Text(
+                        'Total Balance',
                         style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                            color: Colors.white
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          color: Colors.white,
                         ),
                       ),
-                      Icon(Icons.more_horiz,
+                      Icon(
+                        Icons.more_horiz,
                         color: Colors.white,
-                      )
+                      ),
                     ],
                   ),
                 ),
-                SizedBox(height: 7,),
+                SizedBox(height: 7),
                 Padding(
                   padding: const EdgeInsets.only(left: 15),
                   child: Row(
                     children: [
                       Text(
-                        '\$ 2,957',
+                        '\$ ${total()}',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 25,
-                            color: Colors.white
+                          fontWeight: FontWeight.bold,
+                          fontSize: 25,
+                          color: Colors.white,
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 25,),
+                SizedBox(height: 25),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: Row(
@@ -198,14 +247,19 @@ class HomePage extends StatelessWidget {
                           CircleAvatar(
                             radius: 13,
                             backgroundColor: Color.fromARGB(255, 85, 145, 141),
-                            child: Icon(Icons.arrow_downward,color: Colors.white,size: 19,),
+                            child: Icon(
+                              Icons.arrow_downward,
+                              color: Colors.white,
+                              size: 19,
+                            ),
                           ),
-                          SizedBox(width: 7,),
-                          Text('Income',
+                          SizedBox(width: 7),
+                          Text(
+                            'Income',
                             style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 16,
-                                color: Color.fromARGB(255, 216, 216, 216)
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                              color: Color.fromARGB(255, 216, 216, 216),
                             ),
                           ),
                         ],
@@ -215,14 +269,19 @@ class HomePage extends StatelessWidget {
                           CircleAvatar(
                             radius: 13,
                             backgroundColor: Color.fromARGB(255, 85, 145, 141),
-                            child: Icon(Icons.arrow_upward,color: Colors.white,size: 19,),
+                            child: Icon(
+                              Icons.arrow_upward,
+                              color: Colors.white,
+                              size: 19,
+                            ),
                           ),
-                          SizedBox(width: 7,),
-                          Text('Expenses',
+                          SizedBox(width: 7),
+                          Text(
+                            'Expenses',
                             style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 16,
-                                color: Color.fromARGB(255, 216, 216, 216)
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                              color: Color.fromARGB(255, 216, 216, 216),
                             ),
                           ),
                         ],
@@ -230,26 +289,26 @@ class HomePage extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(height: 4,),
+                SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '\$ 50,000',
+                        '\$ ${income()}',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 17,
-                            color: Colors.white
+                          fontWeight: FontWeight.w600,
+                          fontSize: 17,
+                          color: Colors.white,
                         ),
                       ),
                       Text(
-                        '\$ 20,000',
+                        '\$ ${expenses()}',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 17,
-                            color: Colors.white
+                          fontWeight: FontWeight.w600,
+                          fontSize: 17,
+                          color: Colors.white,
                         ),
                       ),
                     ],
