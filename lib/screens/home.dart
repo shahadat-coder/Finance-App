@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:managment/data/listdata.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -41,22 +42,31 @@ class HomePage extends StatelessWidget {
                 return ListTile(
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(5),
-                    child: Image.asset('images/Transfer.png',height: 40,),
+                    child: Image.asset('images/${geter()[index].image!}',height: 40,),
                   ),
-                  title: Text('transfer',
+                  title: Text(
+                    geter()[index].name!,
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  subtitle:Text('today',
+                  subtitle:Text(geter()[index].time!,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ), 
-                  trailing: Text('\$ 500'),
+                  trailing: Text(geter()[index].fee!,style: TextStyle(
+                fontWeight: FontWeight.w600,
+                    fontSize: 19,
+                    color: geter()[index].buy! ? Colors.red : Colors.green,
+                ),
+                  )
                 );
-              }))
+              },
+                childCount: geter().length,
+              ))
+
             ],
           ),
       ),
